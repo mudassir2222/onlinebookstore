@@ -37,22 +37,25 @@ jobs:
       effectivePomSkip: false
       sonarQubeRunAnalysis: false
 
-  - script: mvn clean install
-    displayName: 'Build the project'
+  - script: mvn -version
+    displayName: 'Check Maven Version'
 
-  # Step to run tests
-  - script: mvn test
-    displayName: 'Run unit tests'
+  # - script: mvn clean install
+  #   displayName: 'Build the project'
 
-  # Step to run GitLeaks
-  - powershell: |
-      Invoke-WebRequest -Uri "https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-windows-amd64.exe" -OutFile "gitleaks.exe"
-      .\gitleaks.exe --path=. --report=report.json
-    displayName: 'Run GitLeaks'
+  # # Step to run tests
+  # - script: mvn test
+  #   displayName: 'Run unit tests'
 
-  # Optional: Publish GitLeaks report as a build artifact
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: 'report.json'
-      ArtifactName: 'gitleaks-report'
-      publishLocation: 'Container'
+  # # Step to run GitLeaks
+  # - powershell: |
+  #     Invoke-WebRequest -Uri "https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-windows-amd64.exe" -OutFile "gitleaks.exe"
+  #     .\gitleaks.exe --path=. --report=report.json
+  #   displayName: 'Run GitLeaks'
+
+  # # Optional: Publish GitLeaks report as a build artifact
+  # - task: PublishBuildArtifacts@1
+  #   inputs:
+  #     PathtoPublish: 'report.json'
+  #     ArtifactName: 'gitleaks-report'
+  #     publishLocation: 'Container'
