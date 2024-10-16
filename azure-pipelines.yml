@@ -19,9 +19,9 @@ jobs:
   # Step to set up JDK
   - task: JavaToolInstaller@0
     inputs:
-      versionSpec: '11'  # Specify the JDK version you need
+      versionSpec: '17'  # Specify the JDK version you have installed
       jdkArchitectureOption: 'x64'
-      jdkSourceOption: 'PreInstalled'  # Ensure this is specified
+      jdkSourceOption: 'PreInstalled'  # Use the pre-installed JDK on the agent
 
   # Step to build the project using Maven
   - task: MavenAuthenticate@0
