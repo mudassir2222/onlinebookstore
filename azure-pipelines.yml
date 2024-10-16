@@ -22,14 +22,28 @@ jobs:
       echo "JAVA_HOME is set to %JAVA_HOME%"
     displayName: 'Set JAVA_HOME'
 
-  # Step to build the project using Maven
-  - task: MavenAuthenticate@0
-    inputs:
-      mavenVersionOption: 'MavenVersion'
-      mavenVersion: '3.6.3'  # Specify your Maven version
+  # # Step to build the project using Maven
+  # - task: MavenAuthenticate@0
+  #   inputs:
+  #     mavenVersionOption: 'MavenVersion'
+  #     mavenVersion: '3.6.3'  # Specify your Maven version
 
-  - script: mvn clean install
-    displayName: 'Build the project'
+  # - script: mvn clean install
+  #   displayName: 'Build the project'
+
+  - task: Maven@4
+    inputs:
+      azureSubscription: 'Free Trial(b92e97c1-b96e-49cf-88e2-821cb18fc022)'
+      mavenPomFile: 'pom.xml'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      javaHomeOption: 'JDKVersion'
+      mavenVersionOption: 'Path'
+      mavenDirectory: 'C:\Program Files\apache-maven-3.9.9'
+      mavenSetM2Home: true
+      mavenAuthenticateFeed: false
+      effectivePomSkip: false
+      sonarQubeRunAnalysis: false
 
   # Step to run tests
   - script: mvn test
