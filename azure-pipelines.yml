@@ -1,0 +1,42 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+# Step to checkout the code
+- checkout: self
+
+# Step to set up JDK
+- task: JavaToolInstaller@0
+  inputs:
+    versionSpec: '11'  # Specify the JDK version you need
+    jdkArchitectureOption: 'x64'
+
+# Step to build the project using Maven (or Gradle if you're using that)
+- task: MavenAuthenticate@0
+  inputs:
+    mavenVersionOption: 'MavenVersion'
+    mavenVersion: '3.6.3'  # Specify your Maven version
+
+- script: mvn clean install
+  displayName: 'Build the project'
+
+# Step to run tests
+- script: mvn test
+  displayName: 'Run unit tests'
+
+# Step to run GitLeaks
+- script: |
+    wget https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-linux-amd64
+    chmod +x gitleaks-linux-amd64
+    ./gitleaks-linux-amd64 --path=. --report=report.json
+  displayName: 'Run GitLeaks'
+
+# Optional: Publish GitLeaks report as a build artifact
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: 'report.json'
+    ArtifactName: 'gitleaks-report'
+    publishLocation: 'Container'
