@@ -21,7 +21,7 @@ jobs:
     inputs:
       versionSpec: '11'  # Specify the JDK version you need
       jdkArchitectureOption: 'x64'
-      jdkSourceOption: 'PreInstalled'  # Use the pre-installed JDK on the agent
+      jdkSourceOption: 'PreInstalled'  # Ensure this is specified
 
   # Step to build the project using Maven
   - task: MavenAuthenticate@0
