@@ -16,36 +16,22 @@ jobs:
   # Step to checkout the code
   - checkout: self
 
-  # Step to set JAVA_HOME and MAVEN_HOME environment variables
   - script: |
       echo "##vso[task.setvariable variable=JAVA_HOME]C:\Program Files\Java\jdk-17"
-      echo "##vso[task.setvariable variable=MAVEN_HOME]C:\Program Files\apache-maven-3.9.9"
-      echo "##vso[task.setvariable variable=Path]$MAVEN_HOME\bin;%Path%"
       echo "JAVA_HOME is set to %JAVA_HOME%"
-      echo "MAVEN_HOME is set to %MAVEN_HOME%"
-    displayName: 'Set JAVA_HOME and MAVEN_HOME'
+    displayName: 'Set JAVA_HOME'
 
-  # Check Maven version to verify installation
+  - task: Maven@4
+    inputs:
+      azureSubscription: 'Free Trial(b92e97c1-b96e-49cf-88e2-821cb18fc022)'
+      mavenPomFile: 'pom.xml'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      javaHomeOption: 'JDKVersion'
+      mavenVersionOption: 'Default'
+      mavenAuthenticateFeed: false
+      effectivePomSkip: false
+      sonarQubeRunAnalysis: false
+
   - script: mvn -version
     displayName: 'Check Maven Version'
-
-  # Step to build the project
-  - script: mvn clean install
-    displayName: 'Build the project'
-
-  # Step to run tests
-  - script: mvn test
-    displayName: 'Run unit tests'
-
-  # Step to run GitLeaks
-  # - powershell: |
-  #     Invoke-WebRequest -Uri "https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-windows-amd64.exe" -OutFile "gitleaks.exe"
-  #     .\gitleaks.exe --path=. --report=report.json
-  #   displayName: 'Run GitLeaks'
-
-  # # Optional: Publish GitLeaks report as a build artifact
-  # - task: PublishBuildArtifacts@1
-  #   inputs:
-  #     PathtoPublish: 'report.json'
-  #     ArtifactName: 'gitleaks-report'
-  #     publishLocation: 'Container'
