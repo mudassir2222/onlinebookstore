@@ -16,24 +16,23 @@ jobs:
   # Step to checkout the code
   - checkout: self
 
-  # Step to set JAVA_HOME and MAVEN_HOME
+  # Step to set JAVA_HOME and MAVEN_HOME using a batch file
   - script: |
-      echo "##vso[task.setvariable variable=JAVA_HOME]C:\Program Files\Java\jdk-17"
-      echo "##vso[task.setvariable variable=MAVEN_HOME]C:\Program Files\apache-maven-3.9.9"
-      echo "##vso[task.setvariable variable=PATH]$MAVEN_HOME\bin;%PATH%"
-      echo "JAVA_HOME is set to %JAVA_HOME%"
-      echo "MAVEN_HOME is set to %MAVEN_HOME%"
-      echo "Updated PATH is %PATH%"
-    displayName: 'Set JAVA_HOME and MAVEN_HOME'
+      echo @echo off > setup_env.bat
+      echo set MAVEN_HOME=C:\Program Files\apache-maven-3.9.9 >> setup_env.bat
+      echo set JAVA_HOME=C:\Program Files\Java\jdk-17 >> setup_env.bat
+      echo set PATH=%MAVEN_HOME%\bin;%%PATH%% >> setup_env.bat
+      echo call mvn clean install >> setup_env.bat
+      call setup_env.bat
+    displayName: 'Setup Environment and Build'
 
-  # Step to build the project using Maven
-  - task: MavenAuthenticate@0
-    inputs:
-      mavenVersionOption: 'MavenVersion'
-      mavenVersion: '3.6.3'  # Specify your Maven version
-
-  - script: mvn clean install
-    displayName: 'Build the project'
+  # Step to verify environment variables
+  - script: |
+      echo JAVA_HOME: %JAVA_HOME%
+      echo MAVEN_HOME: %MAVEN_HOME%
+      echo PATH: %PATH%
+      mvn -version
+    displayName: 'Verify Maven and Java Installation'
 
   # Step to run tests
   - script: mvn test
