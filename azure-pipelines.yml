@@ -27,30 +27,14 @@ jobs:
       mavenPomFile: 'pom.xml'
       publishJUnitResults: true
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
-      javaHomeOption: 'JDKVersion'
-      mavenVersionOption: 'Default'
+      javaHomeOption: 'Path'
+      jdkDirectory: 'C:\Program Files\Java\jdk-17'
+      mavenVersionOption: 'Path'
+      mavenDirectory: 'C:\Program Files\apache-maven-3.9.9'
+      mavenSetM2Home: false
       mavenAuthenticateFeed: false
       effectivePomSkip: false
       sonarQubeRunAnalysis: false
-
-  # # Step to build the project using Maven
-  # - task: MavenAuthenticate@0
-  #   inputs:
-  #     mavenVersionOption: 'MavenVersion'
-  #     mavenVersion: '3.6.3'  # Specify your Maven version
-
-  # - task: Maven@4
-  #   inputs:
-  #     mavenPomFile: 'pom.xml'
-  #     publishJUnitResults: true
-  #     testResultsFiles: '**/surefire-reports/TEST-*.xml'
-  #     javaHomeOption: 'JDKVersion'
-  #     mavenVersionOption: 'Path'
-  #     mavenDirectory: 'C:\Program Files\apache-maven-3.9.9'
-  #     mavenSetM2Home: true
-  #     mavenAuthenticateFeed: false
-  #     effectivePomSkip: false
-  #     sonarQubeRunAnalysis: false
 
   - script: mvn clean install
     displayName: 'Build the project'
