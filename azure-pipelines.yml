@@ -33,7 +33,6 @@ jobs:
 
   - task: Maven@4
     inputs:
-      azureSubscription: 'Free Trial(b92e97c1-b96e-49cf-88e2-821cb18fc022)'
       mavenPomFile: 'pom.xml'
       publishJUnitResults: true
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
