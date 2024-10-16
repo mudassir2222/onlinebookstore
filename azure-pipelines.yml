@@ -2,15 +2,15 @@ trigger:
 - main
 
 pool:
-  name: 'Default'  # Or specify the name of the pool where your agent resides
+  name: 'Default'
 
 jobs:
 - job: BuildAndTest
   displayName: 'Build, Test, and Run GitLeaks'
   pool:
-    name: 'Default'  # Ensure this matches the pool name
+    name: 'Default'
     demands:
-      - agent.name -equals DESKTOP-1QUEN13  # Specify your agent name
+      - agent.name -equals DESKTOP-1QUEN13
 
   steps:
   # Step to checkout the code
@@ -21,6 +21,7 @@ jobs:
     inputs:
       versionSpec: '11'  # Specify the JDK version you need
       jdkArchitectureOption: 'x64'
+      jdkSourceOption: 'PreInstalled'  # Use the pre-installed JDK on the agent
 
   # Step to build the project using Maven
   - task: MavenAuthenticate@0
