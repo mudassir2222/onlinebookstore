@@ -2,41 +2,48 @@ trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  name: 'Default'  # Or specify the name of the pool where your agent resides
 
-steps:
-# Step to checkout the code
-- checkout: self
+jobs:
+- job: BuildAndTest
+  displayName: 'Build, Test, and Run GitLeaks'
+  pool:
+    name: 'Default'  # Ensure this matches the pool name
+    demands:
+      - agent.name -equals DESKTOP-1QUEN13  # Specify your agent name
 
-# Step to set up JDK
-- task: JavaToolInstaller@0
-  inputs:
-    versionSpec: '11'  # Specify the JDK version you need
-    jdkArchitectureOption: 'x64'
+  steps:
+  # Step to checkout the code
+  - checkout: self
 
-# Step to build the project using Maven (or Gradle if you're using that)
-- task: MavenAuthenticate@0
-  inputs:
-    mavenVersionOption: 'MavenVersion'
-    mavenVersion: '3.6.3'  # Specify your Maven version
+  # Step to set up JDK
+  - task: JavaToolInstaller@0
+    inputs:
+      versionSpec: '11'  # Specify the JDK version you need
+      jdkArchitectureOption: 'x64'
 
-- script: mvn clean install
-  displayName: 'Build the project'
+  # Step to build the project using Maven
+  - task: MavenAuthenticate@0
+    inputs:
+      mavenVersionOption: 'MavenVersion'
+      mavenVersion: '3.6.3'  # Specify your Maven version
 
-# Step to run tests
-- script: mvn test
-  displayName: 'Run unit tests'
+  - script: mvn clean install
+    displayName: 'Build the project'
 
-# Step to run GitLeaks
-- script: |
-    wget https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-linux-amd64
-    chmod +x gitleaks-linux-amd64
-    ./gitleaks-linux-amd64 --path=. --report=report.json
-  displayName: 'Run GitLeaks'
+  # Step to run tests
+  - script: mvn test
+    displayName: 'Run unit tests'
 
-# Optional: Publish GitLeaks report as a build artifact
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: 'report.json'
-    ArtifactName: 'gitleaks-report'
-    publishLocation: 'Container'
+  # Step to run GitLeaks
+  - powershell: |
+      Invoke-WebRequest -Uri "https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-windows-amd64.exe" -OutFile "gitleaks.exe"
+      .\gitleaks.exe --path=. --report=report.json
+    displayName: 'Run GitLeaks'
+
+  # Optional: Publish GitLeaks report as a build artifact
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: 'report.json'
+      ArtifactName: 'gitleaks-report'
+      publishLocation: 'Container'
