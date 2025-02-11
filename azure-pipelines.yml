@@ -2,11 +2,11 @@ trigger:
 - main
 
 pool:
+  name: 'Default'  # Explicitly specify the default agent pool
   vmImage: 'ubuntu-latest'
 
 variables:
-  - name: TO_PHONE_NUMBER
-    value: '9619611425'  # Safe to keep non-sensitive data here
+  TO_PHONE_NUMBER: '9619611425'
 
 steps:
 # Step 1: Clone the GitHub Repository
@@ -15,7 +15,7 @@ steps:
     echo "Repository cloned successfully."
   displayName: "Clone GitHub Repository"
 
-# Step 2: Send SMS Notification
+# Step 2: Send SMS Notification via Twilio
 - script: |
     echo "Cloning successful. Sending SMS notification..."
     curl -X POST https://api.twilio.com/2010-04-01/Accounts/$(TWILIO_ACCOUNT_SID)/Messages.json \
