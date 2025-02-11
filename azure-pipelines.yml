@@ -2,55 +2,21 @@ trigger:
 - main
 
 pool:
-  name: 'Default'
+  vmImage: 'ubuntu-latest'
 
-jobs:
-- job: BuildAndTest
-  displayName: 'Build, Test, and Run GitLeaks'
-  pool:
-    name: 'Default'
-    demands:
-      - agent.name -equals DESKTOP-1QUEN13
+steps:
+# Step 1: Clone the GitHub Repository
+- task: Checkout@1
+  inputs:
+    repository: 'https://github.com/mudassir2222/onlinebookstore.git'
+    clean: true
 
-  steps:
-  # Step to checkout the code
-  - checkout: self
-
-  # Step to set the JAVA_HOME environment variable
-  - script: |
-      echo "##vso[task.setvariable variable=JAVA_HOME]C:\Program Files\Java\jdk-17"
-      echo "JAVA_HOME is set to %JAVA_HOME%"
-    displayName: 'Set JAVA_HOME'
-
-  # Step to run Maven build
-  - task: Maven@4
-    inputs:
-      mavenPomFile: 'pom.xml'
-      publishJUnitResults: true
-      testResultsFiles: '**/surefire-reports/TEST-*.xml'
-      javaHomeOption: 'Path'
-      jdkDirectory: 'C:\Program Files\Java\jdk-17'  # This should point to the JDK directory, not bin
-      mavenVersionOption: 'Path'
-      mavenDirectory: 'C:\Program Files\apache-maven-3.9.9'  # This should point to the Maven directory, not bin
-      mavenSetM2Home: true
-      mavenAuthenticateFeed: false
-      effectivePomSkip: false
-      sonarQubeRunAnalysis: false
-      goals: 'clean install'  # Specify the Maven goals here
-
-  # Step to run unit tests
-  - script: mvn test
-    displayName: 'Run unit tests'
-
-  # Step to run GitLeaks
-  - powershell: |
-      Invoke-WebRequest -Uri "https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-windows-amd64.exe" -OutFile "gitleaks.exe"
-      .\gitleaks.exe --path=. --report=report.json
-    displayName: 'Run GitLeaks'
-
-  # Optional: Publish GitLeaks report as a build artifact
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: 'report.json'
-      ArtifactName: 'gitleaks-report'
-      publishLocation: 'Container'
+# Step 2: Send SMS Notification
+- script: |
+    echo "Cloning successful. Sending SMS notification..."
+    curl -X POST https://api.twilio.com/2010-04-01/Accounts/$(TWILIO_ACCOUNT_SID)/Messages.json \
+    --data-urlencode "Body=Clone Successful: onlinebookstore.git" \
+    --data-urlencode "From=$(TWILIO_PHONE_NUMBER)" \
+    --data-urlencode "To=$(TO_PHONE_NUMBER)" \
+    -u $(TWILIO_ACCOUNT_SID):$(TWILIO_AUTH_TOKEN)
+  displayName: "Send SMS Notification"
