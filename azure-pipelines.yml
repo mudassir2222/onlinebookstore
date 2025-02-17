@@ -6,7 +6,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  TO_PHONE_NUMBER: '9619611425'
+  USER_PHONE_NUMBER: '+919619611425'
 
 steps:
 # Step 1: Clone the GitHub Repository
@@ -21,6 +21,6 @@ steps:
     curl -X POST https://api.twilio.com/2010-04-01/Accounts/$(TWILIO_ACCOUNT_SID)/Messages.json \
     --data-urlencode "Body=Clone Successful: onlinebookstore.git" \
     --data-urlencode "From=$(TWILIO_PHONE_NUMBER)" \
-    --data-urlencode "To=$(TO_PHONE_NUMBER)" \
+    --data-urlencode "To=$(USER_PHONE_NUMBER)" \
     -u $(TWILIO_ACCOUNT_SID):$(TWILIO_AUTH_TOKEN)
   displayName: "Send SMS Notification"
