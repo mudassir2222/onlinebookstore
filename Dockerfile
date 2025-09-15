@@ -1,4 +1,4 @@
 FROM openjdk:11
-EXPOSE
+EXPOSE 8080
 COPY target/
-ENTRYPOINT ["java","-jar",""]
+ENTRYPOINT ["java","-jar","onlinebookstore"]
