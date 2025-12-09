@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       JIRA_ISSUE:
-        description: 'Jira issue key (e.g. KAN-1)'
+        description: 'Jira issue key (e.g. your real Jira issue)'
         required: false
-        default: 'KAN-1'
+        default: 'GLOS-123'  # <-- replace with your actual Jira issue key used in Jenkins
 
 jobs:
   build-and-update-jira:
@@ -28,20 +28,14 @@ jobs:
 
       - name: Show Jira input
         run: |
-          # Use input if exists, else default
-          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
+          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'GLOS-123' }}"
           echo "Running workflow for Jira issue: $ISSUE"
 
       # ===== Stage 1: Fetch Jira details =====
       - name: Fetch Jira issue details
         id: fetch_jira
         run: |
-          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
-          if [ -z "$ISSUE" ]; then
-            echo "::error::JIRA_ISSUE input is empty"
-            exit 1
-          fi
-
+          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'GLOS-123' }}"
           RESPONSE=$(curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
             -H "Accept: application/json" \
             "${{ secrets.JIRA_BASE }}/rest/api/2/issue/${ISSUE}")
@@ -85,7 +79,7 @@ jobs:
       - name: Add comment to Jira (success)
         if: success()
         run: |
-          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
+          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'GLOS-123' }}"
           BUILD_NO=${{ github.run_number }}
           COMMENT=$(printf '{"body":"✅ Build & Deployment successful from GitHub Actions run %s (workflow: %s)"}' "$BUILD_NO" "${{ github.workflow }}")
           curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
@@ -99,7 +93,7 @@ jobs:
       - name: Add comment to Jira (failure)
         if: failure()
         run: |
-          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
+          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'GLOS-123' }}"
           BUILD_NO=${{ github.run_number }}
           COMMENT=$(printf '{"body":"❌ GitHub Actions run %s failed (workflow: %s). Check logs."}' "$BUILD_NO" "${{ github.workflow }}")
           curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
