@@ -8,7 +8,7 @@ on:
     inputs:
       JIRA_ISSUE:
         description: 'Jira issue key (e.g. KAN-1)'
-        required: true
+        required: false
         default: 'KAN-1'
 
 jobs:
@@ -28,13 +28,15 @@ jobs:
 
       - name: Show Jira input
         run: |
-          echo "Running workflow for Jira issue: ${{ github.event.inputs.JIRA_ISSUE }}"
+          # Use input if exists, else default
+          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
+          echo "Running workflow for Jira issue: $ISSUE"
 
       # ===== Stage 1: Fetch Jira details =====
       - name: Fetch Jira issue details
         id: fetch_jira
         run: |
-          ISSUE=${{ github.event.inputs.JIRA_ISSUE }}
+          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
           if [ -z "$ISSUE" ]; then
             echo "::error::JIRA_ISSUE input is empty"
             exit 1
@@ -83,7 +85,7 @@ jobs:
       - name: Add comment to Jira (success)
         if: success()
         run: |
-          ISSUE=${{ github.event.inputs.JIRA_ISSUE }}
+          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
           BUILD_NO=${{ github.run_number }}
           COMMENT=$(printf '{"body":"✅ Build & Deployment successful from GitHub Actions run %s (workflow: %s)"}' "$BUILD_NO" "${{ github.workflow }}")
           curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
@@ -97,7 +99,7 @@ jobs:
       - name: Add comment to Jira (failure)
         if: failure()
         run: |
-          ISSUE=${{ github.event.inputs.JIRA_ISSUE }}
+          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
           BUILD_NO=${{ github.run_number }}
           COMMENT=$(printf '{"body":"❌ GitHub Actions run %s failed (workflow: %s). Check logs."}' "$BUILD_NO" "${{ github.workflow }}")
           curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
