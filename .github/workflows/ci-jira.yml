@@ -20,10 +20,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install jq (for parsing JSON)
+      - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Show input
+      - name: Show Jira input
         run: echo "Running for Jira issue: ${{ github.event.inputs.JIRA_ISSUE }}"
 
       # ===== Stage 1: Fetch Jira details =====
@@ -49,9 +49,9 @@ jobs:
           SUMMARY=$(echo "$RESPONSE" | jq -r '.fields.summary // "NO_SUMMARY"')
           STATUS=$(echo "$RESPONSE" | jq -r '.fields.status.name // "NO_STATUS"')
           echo "Jira summary: $SUMMARY"
-          echo "Jiraa status: $STATUS"
+          echo "Jira status: $STATUS"
 
-          # Set outputs for later steps (updated syntax)
+          # Updated set-output syntax
           echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
           echo "status=$STATUS" >> $GITHUB_OUTPUT
 
