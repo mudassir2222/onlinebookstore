@@ -75,7 +75,7 @@ jobs:
       - name: Deploy (simulate)
         run: |
           echo "Simulating deploy..."
-          echo "Deploy OK"
+          echo "Deploy OKk"
 
       # ===== Jira comment: success =====
       - name: Add comment to Jira (success)
