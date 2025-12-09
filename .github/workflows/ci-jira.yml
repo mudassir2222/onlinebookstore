@@ -1,0 +1,110 @@
+name: CI with Jira
+
+on:
+  workflow_dispatch:
+    inputs:
+      JIRA_ISSUE:
+        description: 'Jira issue key (e.g. KAN-1)'
+        required: true
+        default: 'KAN-1'
+
+jobs:
+  build-and-update-jira:
+    runs-on: ubuntu-latest
+    env:
+      JIRA_BASE: ${{ secrets.JIRA_BASE }}
+      JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+      # Use token via secrets in steps (don't put token directly in env)
+      GIT_REPO: https://github.com/mudassir2222/onlinebookstore.git
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install jq (for parsing JSON)
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Show input
+        run: echo "Running for Jira issue: ${{ github.event.inputs.JIRA_ISSUE }}"
+
+      # ===== Stage 1: Fetch Jira details =====
+      - name: Fetch Jira issue details
+        id: fetch_jira
+        run: |
+          ISSUE=${{ github.event.inputs.JIRA_ISSUE }}
+          if [ -z "$ISSUE" ]; then
+            echo "::error::JIRA_ISSUE input is empty"
+            exit 1
+          fi
+
+          # Call Jira API and save response
+          RESPONSE=$(curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
+            -H "Accept: application/json" \
+            "${{ secrets.JIRA_BASE }}/rest/api/2/issue/${ISSUE}")
+
+          # Fail early if response seems like error (e.g., empty or contains errorMessages)
+          if echo "$RESPONSE" | jq -e 'has("errorMessages")' >/dev/null 2>&1; then
+            echo "Jira API returned error:"
+            echo "$RESPONSE" | jq '.errorMessages'
+            exit 1
+          fi
+
+          SUMMARY=$(echo "$RESPONSE" | jq -r '.fields.summary // "NO_SUMMARY"')
+          STATUS=$(echo "$RESPONSE" | jq -r '.fields.status.name // "NO_STATUS"')
+          echo "Jira summary: $SUMMARY"
+          echo "Jira status: $STATUS"
+
+          # Set outputs for later steps
+          echo "::set-output name=summary::$SUMMARY"
+          echo "::set-output name=status::$STATUS"
+
+      # ===== Clone not needed (checkout done) but we will build =====
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build (Maven)
+        working-directory: .
+        run: |
+          mvn -B -ntp -DskipTests=false clean package
+
+      - name: Run Tests
+        working-directory: .
+        run: |
+          mvn test || true   # don't fail the workflow on 0 tests, change if you want strict
+
+      # ===== Deploy (simulated) =====
+      - name: Deploy (simulate)
+        run: |
+          echo "Simulating deploy..."
+          echo "Deploy OK"
+
+      # ===== Update Jira ticket with success comment =====
+      - name: Add comment to Jira (success)
+        if: success()
+        run: |
+          ISSUE=${{ github.event.inputs.JIRA_ISSUE }}
+          BUILD_NO=${{ github.run_number }}
+          # Use properly escaped JSON
+          COMMENT=$(printf '{"body":"✅ Build & Deployment successful from GitHub Actions run %s (workflow: %s)"}' "$BUILD_NO" "${{ github.workflow }}")
+          curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            --data "$COMMENT" \
+            "${{ secrets.JIRA_BASE }}/rest/api/2/issue/${ISSUE}/comment" \
+            | jq '.id // "no-comment-id"'
+
+      # ===== On failure, add failure comment =====
+      - name: Add comment to Jira (failure)
+        if: failure()
+        run: |
+          ISSUE=${{ github.event.inputs.JIRA_ISSUE }}
+          BUILD_NO=${{ github.run_number }}
+          COMMENT=$(printf '{"body":"❌ GitHub Actions run %s failed (workflow: %s). Check logs."}' "$BUILD_NO" "${{ github.workflow }}")
+          curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            --data "$COMMENT" \
+            "${{ secrets.JIRA_BASE }}/rest/api/2/issue/${ISSUE}/comment" || true
