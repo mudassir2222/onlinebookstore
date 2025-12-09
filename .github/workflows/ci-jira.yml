@@ -14,7 +14,6 @@ jobs:
     env:
       JIRA_BASE: ${{ secrets.JIRA_BASE }}
       JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
-      # Use token via secrets in steps (don't put token directly in env)
       GIT_REPO: https://github.com/mudassir2222/onlinebookstore.git
 
     steps:
@@ -37,12 +36,10 @@ jobs:
             exit 1
           fi
 
-          # Call Jira API and save response
           RESPONSE=$(curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
             -H "Accept: application/json" \
             "${{ secrets.JIRA_BASE }}/rest/api/2/issue/${ISSUE}")
 
-          # Fail early if response seems like error (e.g., empty or contains errorMessages)
           if echo "$RESPONSE" | jq -e 'has("errorMessages")' >/dev/null 2>&1; then
             echo "Jira API returned error:"
             echo "$RESPONSE" | jq '.errorMessages'
@@ -54,11 +51,11 @@ jobs:
           echo "Jira summary: $SUMMARY"
           echo "Jira status: $STATUS"
 
-          # Set outputs for later steps
-          echo "::set-output name=summary::$SUMMARY"
-          echo "::set-output name=status::$STATUS"
+          # Set outputs for later steps (updated syntax)
+          echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
 
-      # ===== Clone not needed (checkout done) but we will build =====
+      # ===== Setup Java & Build =====
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -67,13 +64,11 @@ jobs:
 
       - name: Build (Maven)
         working-directory: .
-        run: |
-          mvn -B -ntp -DskipTests=false clean package
+        run: mvn -B -ntp -DskipTests=false clean package
 
       - name: Run Tests
         working-directory: .
-        run: |
-          mvn test || true   # don't fail the workflow on 0 tests, change if you want strict
+        run: mvn test || true
 
       # ===== Deploy (simulated) =====
       - name: Deploy (simulate)
@@ -81,13 +76,12 @@ jobs:
           echo "Simulating deploy..."
           echo "Deploy OK"
 
-      # ===== Update Jira ticket with success comment =====
+      # ===== Jira comment: success =====
       - name: Add comment to Jira (success)
         if: success()
         run: |
           ISSUE=${{ github.event.inputs.JIRA_ISSUE }}
           BUILD_NO=${{ github.run_number }}
-          # Use properly escaped JSON
           COMMENT=$(printf '{"body":"✅ Build & Deployment successful from GitHub Actions run %s (workflow: %s)"}' "$BUILD_NO" "${{ github.workflow }}")
           curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
             -X POST \
@@ -96,7 +90,7 @@ jobs:
             "${{ secrets.JIRA_BASE }}/rest/api/2/issue/${ISSUE}/comment" \
             | jq '.id // "no-comment-id"'
 
-      # ===== On failure, add failure comment =====
+      # ===== Jira comment: failure =====
       - name: Add comment to Jira (failure)
         if: failure()
         run: |
