@@ -49,7 +49,7 @@ jobs:
           SUMMARY=$(echo "$RESPONSE" | jq -r '.fields.summary // "NO_SUMMARY"')
           STATUS=$(echo "$RESPONSE" | jq -r '.fields.status.name // "NO_STATUS"')
           echo "Jira summary: $SUMMARY"
-          echo "Jira status: $STATUS"
+          echo "Jiraa status: $STATUS"
 
           # Set outputs for later steps (updated syntax)
           echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
