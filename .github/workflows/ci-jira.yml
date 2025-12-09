@@ -24,7 +24,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: Show Jira input
-        run: echo "Running for Jira issue: ${{ github.event.inputs.JIRA_ISSUE }}"
+        run: |
+          echo "Running for Jira issue: ${{ github.event.inputs.JIRA_ISSUE }}"
 
       # ===== Stage 1: Fetch Jira details =====
       - name: Fetch Jira issue details
