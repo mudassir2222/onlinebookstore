@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       JIRA_ISSUE:
-        description: 'Jira issue key (e.g. your real Jira issue)'
+        description: 'Jira issue key (e.g., KAN-1)'
         required: false
-        default: 'GLOS-123'  # <-- replace with your actual Jira issue key used in Jenkins
+        default: 'KAN-1'
 
 jobs:
   build-and-update-jira:
@@ -28,29 +28,26 @@ jobs:
 
       - name: Show Jira input
         run: |
-          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'GLOS-123' }}"
+          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
           echo "Running workflow for Jira issue: $ISSUE"
 
       # ===== Stage 1: Fetch Jira details =====
       - name: Fetch Jira issue details
         id: fetch_jira
         run: |
-          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'GLOS-123' }}"
+          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
           RESPONSE=$(curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
             -H "Accept: application/json" \
             "${{ secrets.JIRA_BASE }}/rest/api/2/issue/${ISSUE}")
-
           if echo "$RESPONSE" | jq -e 'has("errorMessages")' >/dev/null 2>&1; then
             echo "Jira API returned error:"
             echo "$RESPONSE" | jq '.errorMessages'
             exit 1
           fi
-
           SUMMARY=$(echo "$RESPONSE" | jq -r '.fields.summary // "NO_SUMMARY"')
           STATUS=$(echo "$RESPONSE" | jq -r '.fields.status.name // "NO_STATUS"')
           echo "Jira summary: $SUMMARY"
           echo "Jira status: $STATUS"
-
           echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
           echo "status=$STATUS" >> $GITHUB_OUTPUT
 
@@ -62,11 +59,9 @@ jobs:
           java-version: '17'
 
       - name: Build (Maven)
-        working-directory: .
         run: mvn -B -ntp -DskipTests=false clean package
 
       - name: Run Tests
-        working-directory: .
         run: mvn test || true
 
       # ===== Deploy (simulated) =====
@@ -79,7 +74,7 @@ jobs:
       - name: Add comment to Jira (success)
         if: success()
         run: |
-          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'GLOS-123' }}"
+          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
           BUILD_NO=${{ github.run_number }}
           COMMENT=$(printf '{"body":"✅ Build & Deployment successful from GitHub Actions run %s (workflow: %s)"}' "$BUILD_NO" "${{ github.workflow }}")
           curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
@@ -93,7 +88,7 @@ jobs:
       - name: Add comment to Jira (failure)
         if: failure()
         run: |
-          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'GLOS-123' }}"
+          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
           BUILD_NO=${{ github.run_number }}
           COMMENT=$(printf '{"body":"❌ GitHub Actions run %s failed (workflow: %s). Check logs."}' "$BUILD_NO" "${{ github.workflow }}")
           curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
