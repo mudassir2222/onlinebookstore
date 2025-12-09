@@ -1,13 +1,10 @@
 name: CI with Jira
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       JIRA_ISSUE:
-        description: 'Jira issue key (e.g., KAN-1)'
+        description: 'Jira Ticket ID'
         required: false
         default: 'KAN-1'
 
@@ -15,9 +12,10 @@ jobs:
   build-and-update-jira:
     runs-on: ubuntu-latest
     env:
-      JIRA_BASE: ${{ secrets.JIRA_BASE }}
+      GIT_URL: https://github.com/mudassir2222/onlinebookstore.git
+      JIRA_BASE: https://mudassirkhan376.atlassian.net
       JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
-      GIT_REPO: https://github.com/mudassir2222/onlinebookstore.git
+      JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
     steps:
       - name: Checkout repo
@@ -26,73 +24,74 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Show Jira input
+      # ===== Fetch Jira Details =====
+      - name: Fetch Jira Details
         run: |
           ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
-          echo "Running workflow for Jira issue: $ISSUE"
+          echo "===== Fetch Jira ====="
+          echo "Issue: $ISSUE"
 
-      # ===== Stage 1: Fetch Jira details =====
-      - name: Fetch Jira issue details
-        id: fetch_jira
-        run: |
-          ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
-          RESPONSE=$(curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
+          RESPONSE=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
             -H "Accept: application/json" \
-            "${{ secrets.JIRA_BASE }}/rest/api/2/issue/${ISSUE}")
+            "$JIRA_BASE/rest/api/2/issue/$ISSUE")
+
           if echo "$RESPONSE" | jq -e 'has("errorMessages")' >/dev/null 2>&1; then
             echo "Jira API returned error:"
             echo "$RESPONSE" | jq '.errorMessages'
             exit 1
           fi
+
           SUMMARY=$(echo "$RESPONSE" | jq -r '.fields.summary // "NO_SUMMARY"')
           STATUS=$(echo "$RESPONSE" | jq -r '.fields.status.name // "NO_STATUS"')
-          echo "Jira summary: $SUMMARY"
-          echo "Jira status: $STATUS"
-          echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
-          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          echo "Summary: $SUMMARY"
+          echo "Status: $STATUS"
 
-      # ===== Setup Java & Build =====
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+      # ===== Clone Code =====
+      - name: Clone Code
+        run: |
+          rm -rf onlinebookstore
+          git clone $GIT_URL
 
+      # ===== Build =====
       - name: Build (Maven)
-        run: mvn -B -ntp -DskipTests=false clean package
+        run: |
+          cd onlinebookstore
+          mvn clean package -DskipTests=false
 
+      # ===== Test =====
       - name: Run Tests
-        run: mvn test || true
+        run: |
+          cd onlinebookstore
+          mvn test || true
 
-      # ===== Deploy (simulated) =====
+      # ===== Deploy (Simulated) =====
       - name: Deploy (simulate)
         run: |
-          echo "Simulating deploy..."
-          echo "Deploy OK"
+          echo "Deploying application..."
+          echo "Simulated deployment 완료"
 
-      # ===== Jira comment: success =====
-      - name: Add comment to Jira (success)
+      # ===== Update Jira (Success) =====
+      - name: Update Jira Ticket (success)
         if: success()
         run: |
           ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
           BUILD_NO=${{ github.run_number }}
-          COMMENT=$(printf '{"body":"✅ Build & Deployment successful from GitHub Actions run %s (workflow: %s)"}' "$BUILD_NO" "${{ github.workflow }}")
-          curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
+
+          curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
             -X POST \
             -H "Content-Type: application/json" \
-            --data "$COMMENT" \
-            "${{ secrets.JIRA_BASE }}/rest/api/2/issue/${ISSUE}/comment" \
-            | jq '.id // "no-comment-id"'
+            --data "{\"body\":\"✅ Build & Deployment successful from GitHub Actions run $BUILD_NO\"}" \
+            "$JIRA_BASE/rest/api/2/issue/$ISSUE/comment"
 
-      # ===== Jira comment: failure =====
-      - name: Add comment to Jira (failure)
+      # ===== Update Jira (Failure) =====
+      - name: Update Jira Ticket (failure)
         if: failure()
         run: |
           ISSUE="${{ github.event.inputs.JIRA_ISSUE || 'KAN-1' }}"
           BUILD_NO=${{ github.run_number }}
-          COMMENT=$(printf '{"body":"❌ GitHub Actions run %s failed (workflow: %s). Check logs."}' "$BUILD_NO" "${{ github.workflow }}")
-          curl -s -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }}" \
+
+          curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
             -X POST \
             -H "Content-Type: application/json" \
-            --data "$COMMENT" \
-            "${{ secrets.JIRA_BASE }}/rest/api/2/issue/${ISSUE}/comment" || true
+            --data "{\"body\":\"❌ GitHub Actions run $BUILD_NO failed. Check logs.\"}" \
+            "$JIRA_BASE/rest/api/2/issue/$ISSUE/comment" || true
