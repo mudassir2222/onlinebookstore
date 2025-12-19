@@ -15,19 +15,16 @@
           <target>1.7</target>
         </configuration>
       </plugin> 
-             <plugin>
-            <groupId>org.owasp</groupId>
-            <artifactId>dependency-check-maven</artifactId>
-            <version>9.0.9</version>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>check</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
-		
+            <plugin>
+    <groupId>org.owasp</groupId>
+    <artifactId>dependency-check-maven</artifactId>
+    <version>9.0.9</version>
+    <configuration>
+        <format>ALL</format>
+        <failBuildOnCVSS>7</failBuildOnCVSS>
+        <suppressionFile>dependency-check-suppressions.xml</suppressionFile>
+    </configuration>
+    </plugin>
       <plugin>
         <artifactId>maven-war-plugin</artifactId>
         <version>3.2.1</version>
